@@ -74,7 +74,16 @@ export async function deleteStaffAction(id: string) {
 
 export async function validateLoginAction(username: string, password: string, role: string) {
     try {
-        const staffList = await getStaffFromSheet();
+        let staffList: MedicalStaff[] = [];
+        try {
+            staffList = await getStaffFromSheet();
+        } catch (sheetError) {
+            console.error("Erro ao conectar com Google Sheets:", sheetError);
+            return { 
+                success: false, 
+                error: "Erro de conexão com o banco de dados. Verifique se as chaves do Google Sheets estão configuradas no Vercel." 
+            };
+        }
         
         const roleMapping: Record<string, string> = {
             'Administrador': 'admin',
@@ -92,6 +101,12 @@ export async function validateLoginAction(username: string, password: string, ro
         );
 
         if (!user) {
+            if (staffList.length === 0) {
+                return { 
+                    success: false, 
+                    error: "Nenhum profissional cadastrado ou erro ao ler a planilha. Verifique a configuração no Vercel." 
+                };
+            }
             return { success: false, error: "Usuário, senha ou perfil incorretos" };
         }
 
@@ -119,7 +134,7 @@ export async function validateLoginAction(username: string, password: string, ro
         };
     } catch (error) {
         console.error("Erro no login:", error);
-        return { success: false, error: "Erro ao validar login no Sheets" };
+        return { success: false, error: "Erro interno ao validar login" };
     }
 }
 
