@@ -234,10 +234,7 @@ export default function TcleModal({
       year: "numeric",
     });
 
-    const printWindow = window.open("", "_blank");
-    if (!printWindow) return;
-
-    printWindow.document.write(`<!DOCTYPE html>
+    const htmlContent = `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
@@ -414,12 +411,17 @@ export default function TcleModal({
     Vias: 01 para o paciente · 01 para o prontuário médico
   </div>
 </body>
-</html>`);
+</html>`;
 
-    printWindow.document.close();
-    setTimeout(() => {
-      printWindow.print();
-    }, 500);
+    const blob = new Blob([htmlContent], { type: "text/html;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const printWindow = window.open(url, "_blank");
+    if (printWindow) {
+      printWindow.addEventListener("load", () => {
+        printWindow.print();
+        URL.revokeObjectURL(url);
+      });
+    }
   }
 
   function handleReset() {
@@ -450,7 +452,10 @@ export default function TcleModal({
             </div>
           </div>
           <button
+            type="button"
             onClick={onClose}
+            aria-label="Fechar"
+            title="Fechar"
             className="p-2 hover:bg-white/20 rounded-full transition-colors"
           >
             <X className="w-5 h-5" />
@@ -506,22 +511,22 @@ export default function TcleModal({
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="sm:col-span-2">
-                  <label className="label-form">
+                  <label className="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wide">
                     Nome completo <span className="text-red-500">*</span>
                   </label>
                   <input
-                    className="input-form"
+                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#0a1f44] focus:border-[#0a1f44] transition-colors"
                     value={form.patientName}
                     onChange={(e) => set("patientName", e.target.value)}
                     placeholder="Nome completo do paciente"
                   />
                 </div>
                 <div>
-                  <label className="label-form">
+                  <label className="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wide">
                     Data de Nascimento <span className="text-red-500">*</span>
                   </label>
                   <input
-                    className="input-form"
+                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#0a1f44] focus:border-[#0a1f44] transition-colors"
                     value={form.patientBirthDate}
                     onChange={(e) =>
                       set("patientBirthDate", maskDate(e.target.value))
@@ -531,18 +536,18 @@ export default function TcleModal({
                   />
                 </div>
                 <div>
-                  <label className="label-form">Idade</label>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wide">Idade</label>
                   <input
-                    className="input-form bg-slate-50"
+                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#0a1f44] focus:border-[#0a1f44] transition-colors bg-slate-50"
                     value={form.patientAge}
                     readOnly
                     placeholder="Calculada automaticamente"
                   />
                 </div>
                 <div>
-                  <label className="label-form">CPF</label>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wide">CPF</label>
                   <input
-                    className="input-form"
+                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#0a1f44] focus:border-[#0a1f44] transition-colors"
                     value={form.patientCPF}
                     onChange={(e) => set("patientCPF", maskCPF(e.target.value))}
                     placeholder="000.000.000-00"
@@ -550,20 +555,20 @@ export default function TcleModal({
                   />
                 </div>
                 <div>
-                  <label className="label-form">RG</label>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wide">RG</label>
                   <input
-                    className="input-form"
+                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#0a1f44] focus:border-[#0a1f44] transition-colors"
                     value={form.patientRG}
                     onChange={(e) => set("patientRG", e.target.value)}
                     placeholder="Número do RG"
                   />
                 </div>
                 <div>
-                  <label className="label-form">
+                  <label className="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wide">
                     Prontuário <span className="text-red-500">*</span>
                   </label>
                   <input
-                    className="input-form"
+                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#0a1f44] focus:border-[#0a1f44] transition-colors"
                     value={form.patientMedicalRecord}
                     onChange={(e) =>
                       set("patientMedicalRecord", e.target.value)
@@ -572,18 +577,18 @@ export default function TcleModal({
                   />
                 </div>
                 <div>
-                  <label className="label-form">Convênio / Plano</label>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wide">Convênio / Plano</label>
                   <input
-                    className="input-form"
+                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#0a1f44] focus:border-[#0a1f44] transition-colors"
                     value={form.patientInsurance}
                     onChange={(e) => set("patientInsurance", e.target.value)}
                     placeholder="Ex: Unimed, IPERGS, Particular"
                   />
                 </div>
                 <div>
-                  <label className="label-form">Telefone</label>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wide">Telefone</label>
                   <input
-                    className="input-form"
+                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#0a1f44] focus:border-[#0a1f44] transition-colors"
                     value={form.patientPhone}
                     onChange={(e) =>
                       set("patientPhone", maskPhone(e.target.value))
@@ -593,18 +598,18 @@ export default function TcleModal({
                   />
                 </div>
                 <div className="sm:col-span-2">
-                  <label className="label-form">Endereço</label>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wide">Endereço</label>
                   <input
-                    className="input-form"
+                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#0a1f44] focus:border-[#0a1f44] transition-colors"
                     value={form.patientAddress}
                     onChange={(e) => set("patientAddress", e.target.value)}
                     placeholder="Rua, número, bairro"
                   />
                 </div>
                 <div>
-                  <label className="label-form">Cidade / Estado</label>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wide">Cidade / Estado</label>
                   <input
-                    className="input-form"
+                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#0a1f44] focus:border-[#0a1f44] transition-colors"
                     value={form.patientCity}
                     onChange={(e) => set("patientCity", e.target.value)}
                     placeholder="Ex: Porto Alegre / RS"
@@ -618,18 +623,18 @@ export default function TcleModal({
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
-                    <label className="label-form">Nome do Responsável</label>
+                    <label className="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wide">Nome do Responsável</label>
                     <input
-                      className="input-form"
+                      className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#0a1f44] focus:border-[#0a1f44] transition-colors"
                       value={form.guardianName}
                       onChange={(e) => set("guardianName", e.target.value)}
                       placeholder="Nome completo"
                     />
                   </div>
                   <div>
-                    <label className="label-form">Parentesco</label>
+                    <label className="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wide">Parentesco</label>
                     <input
-                      className="input-form"
+                      className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#0a1f44] focus:border-[#0a1f44] transition-colors"
                       value={form.guardianRelationship}
                       onChange={(e) =>
                         set("guardianRelationship", e.target.value)
@@ -638,9 +643,9 @@ export default function TcleModal({
                     />
                   </div>
                   <div>
-                    <label className="label-form">CPF do Responsável</label>
+                    <label className="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wide">CPF do Responsável</label>
                     <input
-                      className="input-form"
+                      className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#0a1f44] focus:border-[#0a1f44] transition-colors"
                       value={form.guardianCPF}
                       onChange={(e) =>
                         set("guardianCPF", maskCPF(e.target.value))
@@ -662,32 +667,32 @@ export default function TcleModal({
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="sm:col-span-2">
-                  <label className="label-form">
+                  <label className="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wide">
                     Nome do Médico Responsável{" "}
                     <span className="text-red-500">*</span>
                   </label>
                   <input
-                    className="input-form"
+                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#0a1f44] focus:border-[#0a1f44] transition-colors"
                     value={form.doctorName}
                     onChange={(e) => set("doctorName", e.target.value)}
                     placeholder="Nome completo do médico"
                   />
                 </div>
                 <div>
-                  <label className="label-form">
+                  <label className="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wide">
                     CRM <span className="text-red-500">*</span>
                   </label>
                   <input
-                    className="input-form"
+                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#0a1f44] focus:border-[#0a1f44] transition-colors"
                     value={form.doctorCRM}
                     onChange={(e) => set("doctorCRM", e.target.value)}
                     placeholder="Ex: 123456/RS"
                   />
                 </div>
                 <div>
-                  <label className="label-form">Especialidade</label>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wide">Especialidade</label>
                   <input
-                    className="input-form"
+                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#0a1f44] focus:border-[#0a1f44] transition-colors"
                     value={form.doctorSpecialty}
                     onChange={(e) => set("doctorSpecialty", e.target.value)}
                     placeholder="Ex: Cirurgia Oncológica"
@@ -699,9 +704,9 @@ export default function TcleModal({
                   </p>
                 </div>
                 <div>
-                  <label className="label-form">Nome do Anestesiologista</label>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wide">Nome do Anestesiologista</label>
                   <input
-                    className="input-form"
+                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#0a1f44] focus:border-[#0a1f44] transition-colors"
                     value={form.anesthesiologistName}
                     onChange={(e) =>
                       set("anesthesiologistName", e.target.value)
@@ -710,9 +715,9 @@ export default function TcleModal({
                   />
                 </div>
                 <div>
-                  <label className="label-form">CRM Anestesiologista</label>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wide">CRM Anestesiologista</label>
                   <input
-                    className="input-form"
+                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#0a1f44] focus:border-[#0a1f44] transition-colors"
                     value={form.anesthesiologistCRM}
                     onChange={(e) =>
                       set("anesthesiologistCRM", e.target.value)
@@ -726,18 +731,18 @@ export default function TcleModal({
                   </p>
                 </div>
                 <div>
-                  <label className="label-form">Nome do Residente</label>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wide">Nome do Residente</label>
                   <input
-                    className="input-form"
+                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#0a1f44] focus:border-[#0a1f44] transition-colors"
                     value={form.residentName}
                     onChange={(e) => set("residentName", e.target.value)}
                     placeholder="Nome completo"
                   />
                 </div>
                 <div>
-                  <label className="label-form">CRM Residente</label>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wide">CRM Residente</label>
                   <input
-                    className="input-form"
+                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#0a1f44] focus:border-[#0a1f44] transition-colors"
                     value={form.residentCRM}
                     onChange={(e) => set("residentCRM", e.target.value)}
                     placeholder="Ex: 789012/RS"
@@ -749,20 +754,20 @@ export default function TcleModal({
                   </p>
                 </div>
                 <div className="sm:col-span-2">
-                  <label className="label-form">
+                  <label className="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wide">
                     Hospital / Instituição <span className="text-red-500">*</span>
                   </label>
                   <input
-                    className="input-form"
+                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#0a1f44] focus:border-[#0a1f44] transition-colors"
                     value={form.hospital}
                     onChange={(e) => set("hospital", e.target.value)}
                     placeholder="Ex: Santa Casa de Porto Alegre"
                   />
                 </div>
                 <div className="sm:col-span-2">
-                  <label className="label-form">Endereço do Hospital</label>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wide">Endereço do Hospital</label>
                   <input
-                    className="input-form"
+                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#0a1f44] focus:border-[#0a1f44] transition-colors"
                     value={form.hospitalAddress}
                     onChange={(e) => set("hospitalAddress", e.target.value)}
                     placeholder="Rua, número, bairro, cidade"
@@ -781,32 +786,32 @@ export default function TcleModal({
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="sm:col-span-2">
-                  <label className="label-form">
+                  <label className="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wide">
                     Nome do Procedimento Cirúrgico{" "}
                     <span className="text-red-500">*</span>
                   </label>
                   <input
-                    className="input-form"
+                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#0a1f44] focus:border-[#0a1f44] transition-colors"
                     value={form.procedureName}
                     onChange={(e) => set("procedureName", e.target.value)}
                     placeholder="Ex: Colectomia direita laparoscópica por neoplasia de cólon"
                   />
                 </div>
                 <div>
-                  <label className="label-form">CID-10</label>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wide">CID-10</label>
                   <input
-                    className="input-form"
+                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#0a1f44] focus:border-[#0a1f44] transition-colors"
                     value={form.procedureCID}
                     onChange={(e) => set("procedureCID", e.target.value)}
                     placeholder="Ex: C18.0"
                   />
                 </div>
                 <div>
-                  <label className="label-form">
+                  <label className="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wide">
                     Data Prevista <span className="text-red-500">*</span>
                   </label>
                   <input
-                    className="input-form"
+                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#0a1f44] focus:border-[#0a1f44] transition-colors"
                     value={form.procedureDate}
                     onChange={(e) =>
                       set("procedureDate", maskDate(e.target.value))
@@ -816,9 +821,9 @@ export default function TcleModal({
                   />
                 </div>
                 <div>
-                  <label className="label-form">Horário</label>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wide">Horário</label>
                   <input
-                    className="input-form"
+                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#0a1f44] focus:border-[#0a1f44] transition-colors"
                     value={form.procedureTime}
                     onChange={(e) => set("procedureTime", e.target.value)}
                     placeholder="Ex: 08:00"
@@ -826,22 +831,24 @@ export default function TcleModal({
                   />
                 </div>
                 <div>
-                  <label className="label-form">Centro Cirúrgico / Sala</label>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wide">Centro Cirúrgico / Sala</label>
                   <input
-                    className="input-form"
+                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#0a1f44] focus:border-[#0a1f44] transition-colors"
                     value={form.operatingRoom}
                     onChange={(e) => set("operatingRoom", e.target.value)}
                     placeholder="Ex: CC4 - Sala 3"
                   />
                 </div>
                 <div className="sm:col-span-2">
-                  <label className="label-form">
+                  <label className="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wide">
                     Tipo de Anestesia <span className="text-red-500">*</span>
                   </label>
                   <select
-                    className="input-form"
+                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#0a1f44] focus:border-[#0a1f44] transition-colors"
                     value={form.anesthesiaType}
                     onChange={(e) => set("anesthesiaType", e.target.value)}
+                    title="Tipo de Anestesia"
+                    aria-label="Tipo de Anestesia"
                   >
                     {ANESTHESIA_OPTIONS.map((opt) => (
                       <option key={opt.value} value={opt.value}>
@@ -863,54 +870,54 @@ export default function TcleModal({
               </h3>
               <div className="space-y-3">
                 <div>
-                  <label className="label-form">
+                  <label className="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wide">
                     Diagnóstico <span className="text-red-500">*</span>
                   </label>
                   <input
-                    className="input-form"
+                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#0a1f44] focus:border-[#0a1f44] transition-colors"
                     value={form.diagnosis}
                     onChange={(e) => set("diagnosis", e.target.value)}
                     placeholder="Ex: Adenocarcinoma de cólon direito T3N1M0"
                   />
                 </div>
                 <div>
-                  <label className="label-form">História Clínica</label>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wide">História Clínica</label>
                   <textarea
-                    className="input-form min-h-[100px] resize-y"
+                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#0a1f44] focus:border-[#0a1f44] transition-colors min-h-[100px] resize-y"
                     value={form.clinicalHistory}
                     onChange={(e) => set("clinicalHistory", e.target.value)}
                     placeholder="Descreva a história clínica do paciente: sintomas, evolução, comorbidades relevantes..."
                   />
                 </div>
                 <div>
-                  <label className="label-form">
+                  <label className="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wide">
                     Exames que Justificam o Procedimento
                   </label>
                   <textarea
-                    className="input-form min-h-[90px] resize-y"
+                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#0a1f44] focus:border-[#0a1f44] transition-colors min-h-[90px] resize-y"
                     value={form.justificationExams}
                     onChange={(e) => set("justificationExams", e.target.value)}
                     placeholder="Ex: TC abdome (15/03/2026): massa de 4,5cm no cólon direito com linfonodos regionais comprometidos. Colonoscopia + biópsia: adenocarcinoma..."
                   />
                 </div>
                 <div>
-                  <label className="label-form">
+                  <label className="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wide">
                     Indicação Cirúrgica{" "}
                     <span className="text-red-500">*</span>
                   </label>
                   <textarea
-                    className="input-form min-h-[90px] resize-y"
+                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#0a1f44] focus:border-[#0a1f44] transition-colors min-h-[90px] resize-y"
                     value={form.surgicalIndication}
                     onChange={(e) => set("surgicalIndication", e.target.value)}
                     placeholder="Descreva a justificativa para o procedimento cirúrgico..."
                   />
                 </div>
                 <div>
-                  <label className="label-form">
+                  <label className="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wide">
                     Alternativas Terapêuticas
                   </label>
                   <textarea
-                    className="input-form min-h-[70px] resize-y"
+                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#0a1f44] focus:border-[#0a1f44] transition-colors min-h-[70px] resize-y"
                     value={form.therapeuticAlternatives}
                     onChange={(e) =>
                       set("therapeuticAlternatives", e.target.value)
@@ -949,6 +956,7 @@ export default function TcleModal({
                     </div>
                   )}
                   <button
+                    type="button"
                     onClick={() => abortRef.current?.abort()}
                     className="text-sm text-slate-500 hover:text-red-600 underline"
                   >
@@ -971,8 +979,9 @@ export default function TcleModal({
                     </p>
                   </div>
                   <button
+                    type="button"
                     onClick={handleGenerate}
-                    className="btn-primary flex items-center gap-2"
+                    className="bg-[#0a1f44] text-white rounded-lg px-4 py-2 text-sm font-semibold hover:bg-[#1a3a6b] transition-colors flex items-center gap-2"
                   >
                     <Sparkles className="w-4 h-4" /> Tentar novamente
                   </button>
@@ -1011,8 +1020,9 @@ export default function TcleModal({
                     </ul>
                   </div>
                   <button
+                    type="button"
                     onClick={handleGenerate}
-                    className="btn-primary flex items-center gap-3 text-base px-8 py-3"
+                    className="bg-[#0a1f44] text-white rounded-lg px-8 py-3 text-base font-semibold hover:bg-[#1a3a6b] transition-colors flex items-center gap-3"
                   >
                     <Sparkles className="w-5 h-5" />
                     Gerar TCLE com IA
@@ -1031,6 +1041,7 @@ export default function TcleModal({
                 </h3>
                 <div className="flex gap-2">
                   <button
+                    type="button"
                     onClick={() => setIsEditing(!isEditing)}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
                       isEditing
@@ -1046,8 +1057,9 @@ export default function TcleModal({
                     {isEditing ? "Salvar edição" : "Editar texto"}
                   </button>
                   <button
+                    type="button"
                     onClick={handlePrint}
-                    className="btn-primary flex items-center gap-1.5 text-sm py-1.5 px-4"
+                    className="bg-[#0a1f44] text-white rounded-lg px-4 py-1.5 text-sm font-semibold hover:bg-[#1a3a6b] transition-colors flex items-center gap-1.5"
                   >
                     <Printer className="w-4 h-4" />
                     Imprimir / Salvar PDF
@@ -1060,6 +1072,8 @@ export default function TcleModal({
                   className="w-full min-h-[500px] font-mono text-xs border rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
                   value={editableHtml}
                   onChange={(e) => setEditableHtml(e.target.value)}
+                  aria-label="Conteúdo HTML do TCLE para edição"
+                  title="Conteúdo HTML do TCLE"
                 />
               ) : (
                 <div
@@ -1088,6 +1102,7 @@ export default function TcleModal({
               </div>
 
               <button
+                type="button"
                 onClick={handleReset}
                 className="text-sm text-slate-500 hover:text-slate-700 underline"
               >
@@ -1100,6 +1115,7 @@ export default function TcleModal({
         {/* Footer navigation */}
         <div className="px-6 py-4 border-t bg-slate-50 flex items-center justify-between shrink-0">
           <button
+            type="button"
             onClick={() => setStep((s) => Math.max(1, s - 1))}
             disabled={step === 1 || isGenerating}
             className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium bg-slate-200 text-slate-700 hover:bg-slate-300 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
@@ -1113,6 +1129,7 @@ export default function TcleModal({
 
           {step < 5 ? (
             <button
+              type="button"
               onClick={() => setStep((s) => s + 1)}
               disabled={!canAdvance()}
               className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium bg-[#0a1f44] text-white hover:bg-[#1a3a6b] disabled:opacity-40 disabled:cursor-not-allowed transition-all"
@@ -1121,6 +1138,7 @@ export default function TcleModal({
             </button>
           ) : step === 5 && !isGenerating && !generatedHtml ? (
             <button
+              type="button"
               onClick={handleGenerate}
               className="flex items-center gap-1.5 px-5 py-2 rounded-lg text-sm font-semibold bg-[#d4af37] text-[#0a1f44] hover:bg-yellow-400 transition-all"
             >
@@ -1135,6 +1153,7 @@ export default function TcleModal({
             </button>
           ) : step === 6 ? (
             <button
+              type="button"
               onClick={handlePrint}
               className="flex items-center gap-1.5 px-5 py-2 rounded-lg text-sm font-semibold bg-[#d4af37] text-[#0a1f44] hover:bg-yellow-400 transition-all"
             >
@@ -1144,44 +1163,6 @@ export default function TcleModal({
         </div>
       </div>
 
-      <style jsx>{`
-        .label-form {
-          display: block;
-          font-size: 0.75rem;
-          font-weight: 600;
-          color: #475569;
-          margin-bottom: 4px;
-          text-transform: uppercase;
-          letter-spacing: 0.04em;
-        }
-        .input-form {
-          width: 100%;
-          border: 1px solid #cbd5e1;
-          border-radius: 0.5rem;
-          padding: 0.5rem 0.75rem;
-          font-size: 0.875rem;
-          color: #1e293b;
-          transition: border-color 0.15s;
-          outline: none;
-        }
-        .input-form:focus {
-          border-color: #0a1f44;
-          box-shadow: 0 0 0 2px rgba(10, 31, 68, 0.15);
-        }
-        .btn-primary {
-          background: #0a1f44;
-          color: white;
-          border-radius: 0.5rem;
-          padding: 0.5rem 1rem;
-          font-size: 0.875rem;
-          font-weight: 600;
-          transition: background 0.15s;
-          cursor: pointer;
-        }
-        .btn-primary:hover {
-          background: #1a3a6b;
-        }
-      `}</style>
     </div>
   );
 }
