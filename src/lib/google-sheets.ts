@@ -40,7 +40,10 @@ export const getSheets = () => {
 export const getSpreadsheetId = () => {
     let id = process.env.GOOGLE_SHEET_ID;
     if (id) id = id.replace(/^"|"$/g, '');
-    if (!id) throw new Error("Pendente configuração do Google Sheets (GOOGLE_SHEET_ID ausente no .env)");
+    if (!id) {
+        const email = process.env.GOOGLE_CLIENT_EMAIL?.replace(/^"|"$/g, '').trim() || 'Desconhecido';
+        throw new Error(`Configuração pendente: GOOGLE_SHEET_ID ausente. Verifique se o e-mail da conta de serviço (${email}) tem permissão de Editor na planilha.`);
+    }
     return id;
 };
 
@@ -156,7 +159,7 @@ export async function getFieldSchema(): Promise<FieldSchema[]> {
         return finalSchema.sort((a, b) => (a.order || 0) - (b.order || 0));
     } catch (error) {
         console.error('Erro ao buscar esquema de campos:', error);
-        return INITIAL_SCHEMA;
+        throw error;
     }
 }
 
@@ -246,7 +249,7 @@ export async function getPatientsFromSheet(): Promise<Patient[]> {
         });
     } catch (error) {
         console.error('Erro ao buscar pacientes:', error);
-        return [];
+        throw error;
     }
 }
 
@@ -355,7 +358,7 @@ export async function getStaffFromSheet(): Promise<MedicalStaff[]> {
         }));
     } catch (error) {
         console.error('Erro ao buscar equipe:', error);
-        return [];
+        throw error;
     }
 }
 
