@@ -1,0 +1,204 @@
+'use server';
+
+import { getPatientsFromSheet, savePatientsToSheet, logAccess, getFieldSchema } from '../lib/google-sheets';
+import { logPatientChange, logPatientAction, getPatientChangeLogs } from '../lib/audit-log';
+import { Patient } from '../types';
+import { cookies } from 'next/headers';
+
+async function getCurrentUser() {
+    const cookieStore = await cookies();
+    const username = cookieStore.get('username')?.value;
+    const role = cookieStore.get('role')?.value;
+    const fullname = cookieStore.get('fullname')?.value;
+    if (!username) return null;
+
+    return { username, role, fullName: decodeURIComponent(fullname || "") };
+}
+
+// Positions are handled locally or via recalculateAllPositionsAction
+
+function autoCalculateWaitTime(aih: string | null | undefined, surg: string | null | undefined): number {
+    const sAih = String(aih || '').trim();
+    const sSurg = String(surg || '').trim();
+    if (!sAih || sAih === '--' || !sSurg || sSurg === '--') return 0;
+
+    const parseDate = (d: string): Date | null => {
+        if (d.includes('/')) {
+            const parts = d.split('/');
+            if (parts.length === 3) {
+                let year = Number(parts[2]);
+                if (year < 100) year += 2000;
+                return new Date(year, Number(parts[1]) - 1, Number(parts[0]));
+            }
+        } else if (d.includes('-')) {
+            const parts = d.split('-');
+            if (parts.length >= 3) {
+                return new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2].substring(0, 2)));
+            }
+        }
+        return null;
+    };
+
+    const start = parseDate(sAih);
+    const end = parseDate(sSurg);
+
+    if (!start || !end || isNaN(start.getTime()) || isNaN(end.getTime())) return 0;
+
+    start.setHours(0, 0, 0, 0);
+    end.setHours(0, 0, 0, 0);
+
+    const diffMs = end.getTime() - start.getTime();
+    return Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
+}
+
+export async function getPatientsAction(): Promise<Patient[]> {
+    const user = await getCurrentUser();
+    if (!user) return [];
+
+    const patients = await getPatientsFromSheet();
+    
+    // Sort consistently
+    const sorted = patients.sort((a, b) => {
+        const posA = parseInt(String(a.position || '999'));
+        const posB = parseInt(String(b.position || '999'));
+        if (posA !== posB) return posA - posB;
+        return (a.name || '').localeCompare(b.name || '');
+    });
+
+    return sorted;
+}
+
+export async function createPatientAction(patientData: Omit<Patient, 'id'>) {
+    try {
+        const patients = await getPatientsFromSheet();
+        const user = await getCurrentUser();
+        const decodedName = user?.fullName || 'Desconhecido';
+
+        const lastId = patients.length > 0 ? Math.max(...patients.map(p => parseInt(String(p.id)) || 0)) : 0;
+        const newId = (lastId + 1).toString();
+
+        const waitTime = autoCalculateWaitTime(patientData.aihDate as string, patientData.surgeryDate as string);
+
+        const newPatient: Patient = {
+            ...(patientData as Patient),
+            id: newId,
+            lastUpdated: new Date().toISOString(),
+            lastUpdatedBy: decodedName,
+            waitTime: String(waitTime)
+        };
+
+        const updatedList = [...patients, newPatient];
+        await savePatientsToSheet(updatedList);
+        
+        await logPatientAction(newId, newPatient.name, 'CREATE', decodedName);
+        await logAccess(decodedName, `CRIOU PACIENTE: ${newPatient.name}`).catch(console.error);
+
+        return { success: true };
+    } catch (error) {
+        console.error('Error in createPatientAction:', error);
+        return { success: false, error: 'Erro ao salvar paciente no Sheets' };
+    }
+}
+
+export async function updatePatientAction(patient: Patient) {
+    try {
+        const patients = await getPatientsFromSheet();
+        const user = await getCurrentUser();
+        const decodedName = user?.fullName || 'Desconhecido';
+
+        const index = patients.findIndex(p => p.id === patient.id);
+        if (index === -1) throw new Error("Paciente não encontrado");
+
+        const oldPatient = patients[index];
+        const schema = await getFieldSchema();
+        const changedFields: string[] = [];
+
+        for (const field of schema) {
+            const oldVal = oldPatient[field.id];
+            const newVal = patient[field.id];
+            
+            const sOld = Array.isArray(oldVal) ? JSON.stringify(oldVal) : String(oldVal || '');
+            const sNew = Array.isArray(newVal) ? JSON.stringify(newVal) : String(newVal || '');
+
+            if (sOld !== sNew && field.id !== 'lastUpdated' && field.id !== 'lastUpdatedBy') {
+                await logPatientChange(patient.id, patient.name, field.label, sOld, sNew, decodedName);
+                changedFields.push(field.label);
+            }
+        }
+
+        if (changedFields.length > 0) {
+            await logAccess(decodedName, `EDITOU PACIENTE: ${patient.name} (${changedFields.join(', ')})`).catch(console.error);
+        }
+
+        const waitTime = autoCalculateWaitTime(patient.aihDate as string, patient.surgeryDate as string);
+
+        const updatedPatient = {
+            ...patient,
+            waitTime: String(waitTime),
+            lastUpdated: new Date().toISOString(),
+            lastUpdatedBy: decodedName
+        };
+
+        const updatedList = [...patients];
+        updatedList[index] = updatedPatient;
+        await savePatientsToSheet(updatedList);
+
+        return { success: true };
+    } catch (error) {
+        console.error('Error in updatePatientAction:', error);
+        return { success: false, error: 'Erro ao atualizar paciente no Sheets' };
+    }
+}
+
+export async function deletePatientAction(patientId: string) {
+    try {
+        const patients = await getPatientsFromSheet();
+        const user = await getCurrentUser();
+        const decodedName = user?.fullName || 'Desconhecido';
+
+        const patient = patients.find(p => p.id === patientId);
+        const updatedList = patients.filter(p => p.id !== patientId);
+        
+        await savePatientsToSheet(updatedList);
+
+        await logPatientAction(patientId, patient?.name || 'Desconhecido', 'DELETE', decodedName);
+        await logAccess(decodedName, `EXCLUIU PACIENTE ID: ${patientId}`).catch(console.error);
+
+        return { success: true };
+    } catch (error) {
+        console.error('Error in deletePatientAction:', error);
+        return { success: false, error: 'Erro ao excluir no Sheets' }; 
+    }
+}
+
+export async function getPatientChangeLogsAction() {
+    return await getPatientChangeLogs();
+}
+
+export async function recalculateAllPositionsAction() {
+    try {
+        const patients = await getPatientsFromSheet();
+        
+        const sorted = patients.sort((a, b) => {
+            const timeA = new Date(String(a.aihDate || 0)).getTime();
+            const timeB = new Date(String(b.aihDate || 0)).getTime();
+            return timeA - timeB;
+        });
+
+        const updated = sorted.map((p, i) => ({
+            ...p,
+            position: String(i + 1)
+        }));
+
+        await savePatientsToSheet(updated);
+
+        const user = await getCurrentUser();
+        const decodedName = user?.fullName || 'Desconhecido';
+        await logAccess(decodedName, 'RECALCULOU POSIÇÕES POR DATA AIH').catch(console.error);
+
+        return { success: true };
+    } catch (error) {
+        console.error('Error in recalculateAllPositionsAction:', error);
+        return { success: false, error: 'Erro ao recalcular posições no Sheets' };
+    }
+}
